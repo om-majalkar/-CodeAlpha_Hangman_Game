@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="game-container">
+        <p class="badge">PYTHON PROJECT</p>
+        <h1>Hangman <span>Game</span></h1>
+        <p class="subtitle">Find the hidden word, one letter at a time.</p>
+
+        <section class="stats">
+            <div class="stat"><small>Attempts left</small><strong id="remaining">6</strong></div>
+            <div class="stat"><small>Letters guessed</small><strong id="count">0</strong></div>
+        </section>
+
+        <div id="word" class="word-display" aria-live="polite">_ _ _ _ _ _</div>
+        <p id="message" class="message">Choose a letter below to make your guess.</p>
+
+        <label for="letterInput">Your guess</label>
+        <form id="guessForm" class="input-area">
+            <input id="letterInput" type="text" maxlength="1" pattern="[A-Za-z]" placeholder="A" autocomplete="off" required>
+            <button type="submit" id="guessButton">Guess</button>
+        </form>
+        <p id="guessed" class="guessed">Guessed letters: none</p>
+        <button type="button" id="restart" class="restart-button">↻ New Game</button>
+        <p id="error" class="error" role="alert"></p>
+    </main>
+
+    <script>
+        const wordElement = document.getElementById("word");
+        const remainingElement = document.getElementById("remaining");
+        const countElement = document.getElementById("count");
+        const messageElement = document.getElementById("message");
+        const guessedElement = document.getElementById("guessed");
+        const input = document.getElementById("letterInput");
+        const guessButton = document.getElementById("guessButton");
+        const errorElement = document.getElementById("error");
+
+        async function postJSON(url, data = {}) {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
+            return result;
+        }
+
+        function updateGame(state) {
+            wordElement.textContent = state.display_word;
+            remainingElement.textContent = state.remaining;
+            countElement.textContent = state.guessed_letters.length;
+            guessedElement.textContent = "Guessed letters: " +
+                (state.guessed_letters.length ? state.guessed_letters.join(", ") : "none");
+
+            if (state.won) {
+                messageElement.textContent = "🎉 You won! Great job.";
+            } else if (state.game_over) {
+                messageElement.textContent = "Game over! The word was " + state.answer + ".";
+            } else {
+                messageElement.textContent = "Choose a letter below to make your guess.";
+            }
+
+            input.disabled = state.game_over;
+            guessButton.disabled = state.game_over;
+        }
+
+        document.getElementById("guessForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            errorElement.textContent = "";
+            const letter = input.value.trim().toUpperCase();
+
+            if (!/^[A-Z]$/.test(letter)) {
+                errorElement.textContent = "Enter one letter from A to Z.";
+                return;
+            }
+
+            try {
+                const state = await postJSON("/guess", { letter });
+                updateGame(state);
+                input.value = "";
+                input.focus();
+            } catch (error) {
+                errorElement.textContent = error.message + ". Check the Flask terminal.";
+                console.error(error);
+            }
+        });
+
+        document.getElementById("restart").addEventListener("click", async () => {
+            errorElement.textContent = "";
+            try {
+                const state = await postJSON("/new_game");
+                updateGame(state);
+                input.value = "";
+                input.disabled = false;
+                guessButton.disabled = false;
+                input.focus();
+            } catch (error) {
+                errorElement.textContent = error.message + ". Check the Flask terminal.";
+                console.error(error);
+            }
+        });
+
+        // Start a fresh game through the same backend route used by the restart button.
+        document.getElementById("restart").click();
+    </script>
+</body>
+</html>

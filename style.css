@@ -1,0 +1,49 @@
+* { box-sizing: border-box; }
+body {
+    margin: 0; min-height: 100vh; padding: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: Arial, sans-serif; color: #f5f6ff;
+    background: #0d1020;
+}
+.game-container {
+    width: min(100%, 650px); padding: 36px;
+    border: 1px solid #2c3455; border-radius: 22px;
+    background: #171d34; box-shadow: 0 20px 60px #0005;
+}
+.badge {
+    display: inline-block; padding: 8px 14px; border-radius: 30px;
+    background: #282447; color: #d8d0ff; font-size: 12px;
+    letter-spacing: 2px; font-weight: bold;
+}
+h1 { margin: 22px 0 8px; font-size: clamp(34px, 7vw, 52px); }
+h1 span { color: #52d6bf; }
+.subtitle { color: #b7bfd7; margin-bottom: 28px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.stat { padding: 18px; border-radius: 16px; background: #202945; border: 1px solid #303a5b; }
+.stat small, .stat strong { display: block; }
+.stat small { color: #b7bfd7; margin-bottom: 8px; }
+.stat strong { font-size: 24px; }
+.word-display {
+    min-height: 110px; margin: 20px 0; padding: 28px 12px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px dashed #455174; border-radius: 18px;
+    background: #10162a; font-size: clamp(24px, 5vw, 38px);
+    letter-spacing: 8px; overflow-wrap: anywhere;
+}
+.message { padding: 14px 16px; border-radius: 12px; background: #232d49; color: #c6cde2; }
+label { display: block; margin: 22px 0 10px; color: #c6cde2; }
+.input-area { display: flex; gap: 10px; }
+input {
+    flex: 1; min-width: 0; padding: 15px; border: 1px solid #35405f;
+    border-radius: 12px; background: #10162a; color: white; font-size: 18px;
+}
+button {
+    padding: 14px 22px; border: 0; border-radius: 12px;
+    background: #5b54ad; color: white; font-size: 16px; font-weight: bold; cursor: pointer;
+}
+button:hover { filter: brightness(1.15); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.guessed { color: #aeb8d2; overflow-wrap: anywhere; margin: 18px 0; }
+.restart-button { width: 100%; margin-top: 10px; background: #293554; border: 1px solid #3a486c; }
+.error { color: #ff9b9b; min-height: 20px; }
+@media (max-width: 480px) { .game-container { padding: 22px; } .word-display { letter-spacing: 4px; } }
