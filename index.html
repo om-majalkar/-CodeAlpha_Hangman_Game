@@ -4,110 +4,220 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hangman Game</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet" href="Style.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 30px 15px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            color: #f5f6ff;
+            background: #0d1020;
+        }
+
+        .game {
+            width: 100%;
+            max-width: 600px;
+            padding: 30px;
+            box-sizing: border-box;
+            background: #171d34;
+            border: 1px solid #303958;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        h1 span {
+            color: #52d6bf;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .stat {
+            flex: 1;
+            padding: 15px;
+            background: #222b46;
+            border-radius: 12px;
+        }
+
+        .word {
+            margin: 30px 0;
+            font-size: 32px;
+            letter-spacing: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        #letters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 7px;
+            margin: 25px 0;
+        }
+
+        button {
+            padding: 11px 15px;
+            border: none;
+            border-radius: 8px;
+            background: #514ba5;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        #restart {
+            width: 100%;
+            margin-top: 15px;
+            padding: 15px;
+            background: #293554;
+        }
+
+        #message {
+            color: #52d6bf;
+            min-height: 24px;
+        }
+
+        @media (max-width: 400px) {
+            .game { padding: 18px; }
+            .word { font-size: 24px; letter-spacing: 4px; }
+        }
+    </style>
 </head>
+
 <body>
-    <main class="game-container">
-        <p class="badge">PYTHON PROJECT</p>
+    <main class="game">
+        <p>CODEALPHA • PYTHON PROJECT</p>
+
         <h1>Hangman <span>Game</span></h1>
-        <p class="subtitle">Find the hidden word, one letter at a time.</p>
+        <p>Find the hidden word, one letter at a time.</p>
 
-        <section class="stats">
-            <div class="stat"><small>Attempts left</small><strong id="remaining">6</strong></div>
-            <div class="stat"><small>Letters guessed</small><strong id="count">0</strong></div>
-        </section>
+        <div class="stats">
+            <div class="stat">
+                <p>Attempts left</p>
+                <strong id="remaining">6</strong>
+            </div>
 
-        <div id="word" class="word-display" aria-live="polite">_ _ _ _ _ _</div>
-        <p id="message" class="message">Choose a letter below to make your guess.</p>
+            <div class="stat">
+                <p>Letters guessed</p>
+                <strong id="count">0</strong>
+            </div>
+        </div>
 
-        <label for="letterInput">Your guess</label>
-        <form id="guessForm" class="input-area">
-            <input id="letterInput" type="text" maxlength="1" pattern="[A-Za-z]" placeholder="A" autocomplete="off" required>
-            <button type="submit" id="guessButton">Guess</button>
-        </form>
-        <p id="guessed" class="guessed">Guessed letters: none</p>
-        <button type="button" id="restart" class="restart-button">↻ New Game</button>
-        <p id="error" class="error" role="alert"></p>
+        <div id="word" class="word">_ _ _ _ _ _</div>
+
+        <p id="message">Choose a letter below!</p>
+
+        <div id="letters"></div>
+
+        <button id="restart">↻ New Game</button>
     </main>
 
     <script>
+        const words = [
+            "PYTHON",
+            "APPLE",
+            "TIGER",
+            "SCHOOL",
+            "COMPUTER",
+            "JAVASCRIPT"
+        ];
+
+        let answer = "";
+        let guessed = [];
+        let wrong = 0;
+        const maxWrong = 6;
+
         const wordElement = document.getElementById("word");
         const remainingElement = document.getElementById("remaining");
         const countElement = document.getElementById("count");
         const messageElement = document.getElementById("message");
-        const guessedElement = document.getElementById("guessed");
-        const input = document.getElementById("letterInput");
-        const guessButton = document.getElementById("guessButton");
-        const errorElement = document.getElementById("error");
+        const lettersElement = document.getElementById("letters");
 
-        async function postJSON(url, data = {}) {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
-            return result;
+        function startGame() {
+            answer = words[Math.floor(Math.random() * words.length)];
+            guessed = [];
+            wrong = 0;
+
+            messageElement.textContent = "Choose a letter below!";
+            createLetters();
+            updateGame();
         }
 
-        function updateGame(state) {
-            wordElement.textContent = state.display_word;
-            remainingElement.textContent = state.remaining;
-            countElement.textContent = state.guessed_letters.length;
-            guessedElement.textContent = "Guessed letters: " +
-                (state.guessed_letters.length ? state.guessed_letters.join(", ") : "none");
+        function createLetters() {
+            lettersElement.innerHTML = "";
 
-            if (state.won) {
-                messageElement.textContent = "🎉 You won! Great job.";
-            } else if (state.game_over) {
-                messageElement.textContent = "Game over! The word was " + state.answer + ".";
-            } else {
-                messageElement.textContent = "Choose a letter below to make your guess.";
+            for (let code = 65; code <= 90; code++) {
+                const letter = String.fromCharCode(code);
+                const button = document.createElement("button");
+
+                button.textContent = letter;
+
+                button.addEventListener("click", () => {
+                    guessLetter(letter, button);
+                });
+
+                lettersElement.appendChild(button);
             }
-
-            input.disabled = state.game_over;
-            guessButton.disabled = state.game_over;
         }
 
-        document.getElementById("guessForm").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            errorElement.textContent = "";
-            const letter = input.value.trim().toUpperCase();
-
-            if (!/^[A-Z]$/.test(letter)) {
-                errorElement.textContent = "Enter one letter from A to Z.";
+        function guessLetter(letter, button) {
+            if (guessed.includes(letter) || wrong >= maxWrong ||
+                [...answer].every(ch => guessed.includes(ch))) {
                 return;
             }
 
-            try {
-                const state = await postJSON("/guess", { letter });
-                updateGame(state);
-                input.value = "";
-                input.focus();
-            } catch (error) {
-                errorElement.textContent = error.message + ". Check the Flask terminal.";
-                console.error(error);
-            }
-        });
+            guessed.push(letter);
+            button.disabled = true;
 
-        document.getElementById("restart").addEventListener("click", async () => {
-            errorElement.textContent = "";
-            try {
-                const state = await postJSON("/new_game");
-                updateGame(state);
-                input.value = "";
-                input.disabled = false;
-                guessButton.disabled = false;
-                input.focus();
-            } catch (error) {
-                errorElement.textContent = error.message + ". Check the Flask terminal.";
-                console.error(error);
+            if (!answer.includes(letter)) {
+                wrong++;
             }
-        });
 
-        // Start a fresh game through the same backend route used by the restart button.
-        document.getElementById("restart").click();
+            updateGame();
+        }
+
+        function updateGame() {
+            wordElement.textContent = [...answer]
+                .map(letter => guessed.includes(letter) ? letter : "_")
+                .join(" ");
+
+            remainingElement.textContent = maxWrong - wrong;
+            countElement.textContent = guessed.length;
+
+            const won = [...answer].every(letter => guessed.includes(letter));
+            const lost = wrong >= maxWrong;
+
+            if (won) {
+                messageElement.textContent = "🎉 Congratulations! You won!";
+                disableLetters();
+            } else if (lost) {
+                messageElement.textContent = "Game over! The word was " + answer;
+                disableLetters();
+            }
+        }
+
+        function disableLetters() {
+            document.querySelectorAll("#letters button").forEach(button => {
+                button.disabled = true;
+            });
+        }
+
+        document.getElementById("restart").addEventListener("click", startGame);
+
+        startGame();
     </script>
 </body>
 </html>
